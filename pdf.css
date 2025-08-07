@@ -1,0 +1,70 @@
+.hidden-print {
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+#pdf-summary {
+  font-family: 'Inter', sans-serif;
+  background-color: #ffffff;
+  color: #1a202c;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 0 0 1px #e2e8f0;
+  width: 100%;
+  max-width: 700px;
+  margin: auto;
+}
+#pdf-summary h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #2d3748;
+}
+#pdf-summary p {
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+}
+#pdf-summary span {
+  font-weight: bold;
+  color: #0f766e;
+}
+
+#pdf-summary-content {
+  display: none;
+  padding: 20px;
+  font-family: 'Inter', sans-serif;
+  color: #1a202c;
+  background-color: #ffffff;
+  page-break-after: always;
+}
+#pdf-summary-content h1, #pdf-summary-content h2, #pdf-summary-content h3 {
+  color: #2d3748;
+  margin-bottom: 10px;
+}
+#pdf-summary-content p {
+  margin-bottom: 5px;
+}
+#pdf-summary-content .pdf-chart-img {
+  max-width: 100%;
+  height: auto;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+}
+#pdf-summary-content .pdf-stat-card {
+  border: 1px solid #e0f2fe;
+  background-color: #f0fdfa;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 0.5rem;
+}
+#pdf-summary-content .pdf-stat-card h3 {
+  font-size: 1rem;
+  margin-bottom: 5px;
+}
+#pdf-summary-content .pdf-stat-card p {
+  font-size: 1.2rem;
+  font-weight: bold;
+}

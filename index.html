@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Estructura de Costos</title>
+    <!-- 🎨 Estilos base -->
+<link rel="stylesheet" href="base.css">
+
+<!-- 🎯 Botones -->
+<link rel="stylesheet" href="buttons.css">
+
+<!-- 📊 Gráficos -->
+<link rel="stylesheet" href="charts.css">
+
+<!-- 📁 Secciones colapsables -->
+<link rel="stylesheet" href="collapsible.css">
+
+<!-- 🖨️ Estilos para PDF e impresión -->
+<link rel="stylesheet" href="pdf.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    </head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-900">Dashboard Financiero Interactivo</h1>
+            <p class="mt-4 text-lg text-slate-600">Introduce los datos de tu negocio para calcular costos, precios y métricas de rentabilidad en tiempo real.</p>
+            <div class="mt-8">
+                <label for="business-name-input" class="font-semibold text-slate-700 block mb-2">Nombre de tu Negocio:</label>
+                <input type="text" id="business-name-input" placeholder="Ej. Mi Tienda de Artesanías" class="input-field max-w-md mx-auto text-center text-xl font-bold">
+            </div>
+        </header>
+
+        <main id="main-dashboard-content" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Columna de Entradas de Datos -->
+            <div class="lg:col-span-2 space-y-8">
+
+                <!-- Instrucciones de Uso -->
+                <section class="card">
+                    <div class="collapsible-header" id="instructions-header">
+                        <span>Instrucciones de Uso</span>
+                        <span id="instructions-icon">▼</span>
+                    </div>
+                    <div class="collapsible-content" id="instructions-content">
+                        <p class="mb-2">¡Bienvenido a tu dashboard financiero! Sigue estos pasos para usarlo:</p>
+                        <ol class="list-decimal list-inside text-slate-600 space-y-1">
+                            <li>**Nombre del Negocio:** Ingresa el nombre de tu negocio en la parte superior.</li>
+                            <li>**Gastos Fijos:** Añade todos tus gastos mensuales que no varían (alquiler, salarios administrativos, seguros, etc.).</li>
+                            <li>**Herramientas y Depreciación:** Registra tus herramientas para calcular su desgaste mensual (depreciación), que se suma a tus gastos fijos.</li>
+                            <li>**Costo y Precio por Producto:** Define cada producto, sus costos directos (materia prima, mano de obra, empaque) y el margen de ganancia deseado sobre el precio de venta.</li>
+                            <li>**Inversión y Ventas Estimadas:** Ingresa tu inversión inicial total y las unidades que esperas vender mensualmente para ver proyecciones.</li>
+                            <li>**Resultados en Tiempo Real:** Todos los cálculos (punto de equilibrio, utilidad, ROI) se actualizarán automáticamente en el panel de la derecha.</li>
+                        </ol>
+                    </div>
+                </section>
+                
+                <!-- Gastos Fijos -->
+                <section id="fixed-costs" class="card">
+                    <h2 class="text-2xl font-bold mb-4">1. Gastos Fijos Mensuales</h2>
+                    <p class="text-slate-600 mb-6">Aquí se registran todos los costos que no cambian con el volumen de producción, como alquileres o suscripciones.</p>
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-slate-500 text-sm">
+                                <th class="py-2 pr-2 font-semibold">Concepto del Gasto</th>
+                                <th class="py-2 pr-2 font-semibold">Valor Mensual (Bs.S)</th>
+                                <th class="py-2"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="fixed-costs-table">
+                            <!-- Filas de gastos fijos se agregarán aquí -->
+                        </tbody>
+                    </table>
+                    <button id="add-fixed-cost-btn" class="btn btn-primary mt-4">Añadir Gasto Fijo</button>
+                </section>
+
+                <!-- Herramientas y Depreciación -->
+                <section id="tools-depreciation" class="card">
+                    <h2 class="text-2xl font-bold mb-4">2. Herramientas y Depreciación</h2>
+                    <p class="text-slate-600 mb-6">Calcula el costo mensual del "desgaste" de tus herramientas. Este valor se suma automáticamente a tus gastos fijos.</p>
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-slate-500 text-sm">
+                                <th class="py-2 pr-2 font-semibold">Nombre Herramienta</th>
+                                <th class="py-2 pr-2 font-semibold">Costo Adquisición (Bs.S)</th>
+                                <th class="py-2 pr-2 font-semibold">Valor Residual (Bs.S)</th>
+                                <th class="py-2 pr-2 font-semibold">Vida Útil (Meses)</th>
+                                <th class="py-2"></th>
+                            </tr>
+                        </thead>
+                         <tbody id="tools-table">
+                            <!-- Filas de herramientas se agregarán aquí -->
+                        </tbody>
+                    </table>
+                    <button id="add-tool-btn" class="btn btn-primary mt-4">Añadir Herramienta</button>
+                </section>
+
+                <!-- Productos -->
+                <section id="products" class="card">
+                    <h2 class="text-2xl font-bold mb-4">3. Costo y Precio por Producto</h2>
+                    <p class="text-slate-600 mb-6">Define tus productos, sus costos variables directos y el margen de ganancia deseado para calcular el precio de venta.</p>
+                    <div id="products-table" class="space-y-6">
+                        <!-- Tarjetas de productos se agregarán aquí -->
+                    </div>
+                    <button id="add-product-btn" class="btn btn-primary mt-6">Añadir Producto</button>
+                </section>
+                
+            </div>
+
+            <!-- Columna de Resumen Financiero (Dashboard) -->
+            <aside class="lg:col-span-1 space-y-8">
+                <div class="sticky top-8">
+                    <section id="summary" class="card">
+                        <h2 class="text-2xl font-bold mb-6 text-center">Resumen Financiero</h2>
+                        
+                        <div class="space-y-4">
+                            <div class="stat-card">
+                                <h3 class="font-semibold text-slate-700">Total Gastos Fijos Mensuales</h3>
+                                <p id="summary-fixed-costs" class="text-2xl font-bold text-teal-600">0,00 Bs.S</p>
+                            </div>
+                            <div class="stat-card">
+                                <h3 class="font-semibold text-slate-700">Punto de Equilibrio (Unidades)</h3>
+                                <p id="summary-be-units" class="text-2xl font-bold text-teal-600">0</p>
+                            </div>
+                            <div class="stat-card">
+                                <h3 class="font-semibold text-slate-700">Punto de Equilibrio (Ingresos)</h3>
+                                <p id="summary-be-value" class="text-2xl font-bold text-teal-600">0,00 Bs.S</p>
+                            </div>
+                        </div>
+
+                        <hr class="my-6">
+                        
+                        <h3 class="text-xl font-bold mb-4">Proyección de Rentabilidad</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="investment-input" class="font-semibold text-slate-700 block mb-1">Inversión Inicial Total (Bs.S)</label>
+                                <input type="number" id="investment-input" value="10000" class="input-field">
+                            </div>
+                            <div>
+                                <label for="sales-units-input" class="font-semibold text-slate-700 block mb-1">Unidades Vendidas Estimadas (Mes)</label>
+                                <input type="number" id="sales-units-input" value="100" class="input-field">
+                            </div>
+                             <div class="stat-card">
+                                <h3 class="font-semibold text-slate-700">Utilidad Neta Estimada</h3>
+                                <p id="summary-profit" class="text-2xl font-bold text-green-600">0,00 Bs.S</p>
+                            </div>
+                            <div class="stat-card">
+                                <h3 class="font-semibold text-slate-700">Retorno de Inversión (ROI)</h3>
+                                <p id="summary-roi" class="text-2xl font-bold text-green-600">0.00 %</p>
+                            </div>
+                            <div class="stat-card bg-yellow-50 border-yellow-400">
+                                <h3 class="font-semibold text-slate-700">Unidades para 30% ROI</h3>
+                                <p id="suggested-roi-units" class="text-2xl font-bold text-yellow-700">0</p>
+                            </div>
+                        </div>
+                        
+                        <hr class="my-6">
+
+                        <div class="mt-6">
+                             <h3 class="text-xl font-bold mb-4 text-center">Desglose de Costos</h3>
+                             <div class="chart-container">
+                                <canvas id="costs-chart"></canvas>
+                             </div>
+                        </div>
+                        
+                         <div class="mt-8">
+                             <h3 class="text-xl font-bold mb-4 text-center">Costo vs. Precio (Top 3 Productos)</h3>
+                             <div class="chart-container" style="max-width: 100%;">
+                                <canvas id="products-chart"></canvas>
+                             </div>
+                        </div>
+
+                    </section>
+                </div>
+            </aside>
+        </main>
+    </div>
+<button id="actualizar-resumen-pdf" class="btn btn-secondary">Actualizar Resumen PDF</button>
+    <button id="generar-pdf-final" class="btn btn-primary">Generar PDF</button>
+<section id="pdf-summary-preview" class="bg-white p-6 rounded-lg shadow-lg">
+
+
+  <div id="pdf-summary" class="bg-white p-6 rounded-lg shadow-lg">
+
+  <h2 class="text-2xl font-bold mb-4">Resumen Financiero</h2>
+  <p><strong>Total Gastos Fijos Mensuales:</strong> <span id="pdf-fixed-costs">0,00 Bs.S</span></p>
+  <p><strong>Punto de Equilibrio (Unidades):</strong> <span id="pdf-be-units">0</span></p>
+  <p><strong>Punto de Equilibrio (Ingresos):</strong> <span id="pdf-be-value">0,00 Bs.S</span></p>
+  <p><strong>Utilidad Neta Estimada:</strong> <span id="pdf-profit">0,00 Bs.S</span></p>
+  <p><strong>Retorno de Inversión (ROI):</strong> <span id="pdf-roi">0.00 %</span></p>
+  <p><strong>Unidades para 30% ROI:</strong> <span id="pdf-roi-units">0</span></p>
+  </div>
+
+   
+    
+
+
+
+<script src="main.js"></script>
+<script src="utilidades.js"></script>
+<script src="ui.js"></script>
+<script src="calculos.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="pdf-simple.js"></script>
+
+<script >
+
+    document.getElementById('btnActualizarResumen').addEventListener('click', () => {
+  const datos = {
+    gastosFijos: '1.250,00 Bs.S',
+    peUnidades: '85',
+    peIngresos: '2.550,00 Bs.S',
+    utilidadNeta: '1.300,00 Bs.S',
+    roi: '28.57 %',
+    unidadesROI: '95'
+  };
+
+  generarPDFDesdeHTML(datos);
+});
+
+</script>
+</body>
+</html>

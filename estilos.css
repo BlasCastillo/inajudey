@@ -1,0 +1,155 @@
+    body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .card {
+            background-color: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            margin-bottom: 2rem;
+        }
+        .input-field {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid #cbd5e1;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #2dd4bf;
+            box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.3);
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: #14b8a6;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #0d9488;
+        }
+        .btn-danger {
+            background-color: #f43f5e;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #e11d48;
+        }
+        .stat-card {
+            background-color: #f0fdfa;
+            border-left: 4px solid #14b8a6;
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+            max-width: 400px;
+            margin: auto;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        /* Styles for PDF content - hidden by default */
+        #pdf-summary-content {
+            display: none;
+            padding: 20px;
+            font-family: 'Inter', sans-serif;
+            color: #1a202c;
+            background-color: #ffffff;
+            page-break-after: always; /* Ensure content breaks correctly */
+        }
+        #pdf-summary-content h1, #pdf-summary-content h2, #pdf-summary-content h3 {
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+        #pdf-summary-content p {
+            margin-bottom: 5px;
+        }
+        #pdf-summary-content .pdf-chart-img {
+            max-width: 100%;
+            height: auto;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+        }
+        #pdf-summary-content .pdf-stat-card {
+            border: 1px solid #e0f2fe;
+            background-color: #f0fdfa;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 0.5rem;
+        }
+        #pdf-summary-content .pdf-stat-card h3 {
+            font-size: 1rem;
+            margin-bottom: 5px;
+        }
+        #pdf-summary-content .pdf-stat-card p {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        .collapsible-header {
+            cursor: pointer;
+            padding: 1rem;
+            background-color: #e2e8f0;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            color: #4a5568;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            padding: 0 1rem;
+        }
+        .collapsible-content.active {
+            max-height: 500px; /* Adjust as needed for content */
+            padding-bottom: 1rem;
+        }
+        .hidden-print {
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+        #pdf-summary {
+  font-family: 'Inter', sans-serif;
+  background-color: #ffffff;
+  color: #1a202c;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 0 0 1px #e2e8f0;
+  width: 100%;
+  max-width: 700px;
+  margin: auto;
+}
+#pdf-summary h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #2d3748;
+}
+#pdf-summary p {
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+}
+#pdf-summary span {
+  font-weight: bold;
+  color: #0f766e;
+}
+
