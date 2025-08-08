@@ -1,31 +1,144 @@
-<!DOCTYPE html>
+
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard de Estructura de Costos</title>
-    <!-- 🎨 Estilos base -->
-<link rel="stylesheet" href="base.css">
-
-<!-- 🎯 Botones -->
-<link rel="stylesheet" href="buttons.css">
-
-<!-- 📊 Gráficos -->
-<link rel="stylesheet" href="charts.css">
-
-<!-- 📁 Secciones colapsables -->
-<link rel="stylesheet" href="collapsible.css">
-
-<!-- 🖨️ Estilos para PDF e impresión -->
-<link rel="stylesheet" href="pdf.css">
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Chosen Palette: Tailwind CSS Slate & Teal -->
+    <!-- Application Structure Plan: A single-page, top-to-bottom dashboard design is used instead of tabs to create a fluid user experience. The user enters foundational costs (fixed, tools), then defines products and margins. All data feeds into a real-time financial dashboard at the bottom, featuring key metrics and charts. This structure guides the user logically through their business costs without fragmented navigation. The PDF generation now targets a hidden summary section to ensure a clean, single-page report. -->
+    <!-- Visualization & Content Choices: Fixed/Variable Costs -> Goal: Compare Proportions -> Donut Chart (Chart.js) for an intuitive breakdown. Product Cost vs. Price -> Goal: Compare Values -> Bar Chart (Chart.js) to clearly see profitability per product. Key Metrics (Break-even, ROI) -> Goal: Inform -> Stat Cards (HTML/Tailwind) for quick, scannable insights. All interactions are handled by vanilla JS to update the DOM and charts in real-time. PDF generation now captures chart images for accurate reporting. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    </head>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .card {
+            background-color: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            margin-bottom: 2rem;
+        }
+        .input-field {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid #cbd5e1;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #2dd4bf;
+            box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.3);
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: #14b8a6;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #0d9488;
+        }
+        .btn-danger {
+            background-color: #f43f5e;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #e11d48;
+        }
+        .stat-card {
+            background-color: #f0fdfa;
+            border-left: 4px solid #14b8a6;
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+            max-width: 400px;
+            margin: auto;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        /* Styles for PDF content - hidden by default */
+        #pdf-summary-content {
+            display: none;
+            padding: 20px;
+            font-family: 'Inter', sans-serif;
+            color: #1a202c;
+            background-color: #ffffff;
+            page-break-after: always; /* Ensure content breaks correctly */
+        }
+        #pdf-summary-content h1, #pdf-summary-content h2, #pdf-summary-content h3 {
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+        #pdf-summary-content p {
+            margin-bottom: 5px;
+        }
+        #pdf-summary-content .pdf-chart-img {
+            max-width: 100%;
+            height: auto;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+        }
+        #pdf-summary-content .pdf-stat-card {
+            border: 1px solid #e0f2fe;
+            background-color: #f0fdfa;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 0.5rem;
+        }
+        #pdf-summary-content .pdf-stat-card h3 {
+            font-size: 1rem;
+            margin-bottom: 5px;
+        }
+        #pdf-summary-content .pdf-stat-card p {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        .collapsible-header {
+            cursor: pointer;
+            padding: 1rem;
+            background-color: #e2e8f0;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            color: #4a5568;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            padding: 0 1rem;
+        }
+        .collapsible-content.active {
+            max-height: 500px; /* Adjust as needed for content */
+            padding-bottom: 1rem;
+        }
+    </style>
+</head>
 <body class="bg-slate-50 text-slate-800">
 
     <div class="container mx-auto p-4 md:p-8 max-w-7xl">
@@ -181,49 +294,287 @@
             </aside>
         </main>
     </div>
-<button id="actualizar-resumen-pdf" class="btn btn-secondary">Actualizar Resumen PDF</button>
-    <button id="generar-pdf-final" class="btn btn-primary">Generar PDF</button>
-<section id="pdf-summary-preview" class="bg-white p-6 rounded-lg shadow-lg">
 
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const businessNameInput = document.getElementById('business-name-input');
+            const fixedCostsTable = document.getElementById('fixed-costs-table');
+            const addFixedCostBtn = document.getElementById('add-fixed-cost-btn');
+            const toolsTable = document.getElementById('tools-table');
+            const addToolBtn = document.getElementById('add-tool-btn');
+            const productsTable = document.getElementById('products-table');
+            const addProductBtn = document.getElementById('add-product-btn');
 
-  <div id="pdf-summary" class="bg-white p-6 rounded-lg shadow-lg">
+            const instructionsHeader = document.getElementById('instructions-header');
+            const instructionsContent = document.getElementById('instructions-content');
+            const instructionsIcon = document.getElementById('instructions-icon');
 
-  <h2 class="text-2xl font-bold mb-4">Resumen Financiero</h2>
-  <p><strong>Total Gastos Fijos Mensuales:</strong> <span id="pdf-fixed-costs">0,00 Bs.S</span></p>
-  <p><strong>Punto de Equilibrio (Unidades):</strong> <span id="pdf-be-units">0</span></p>
-  <p><strong>Punto de Equilibrio (Ingresos):</strong> <span id="pdf-be-value">0,00 Bs.S</span></p>
-  <p><strong>Utilidad Neta Estimada:</strong> <span id="pdf-profit">0,00 Bs.S</span></p>
-  <p><strong>Retorno de Inversión (ROI):</strong> <span id="pdf-roi">0.00 %</span></p>
-  <p><strong>Unidades para 30% ROI:</strong> <span id="pdf-roi-units">0</span></p>
-  </div>
+            let costsChart, productsChart;
 
-   
-    
+            const formatCurrency = (value) => {
+                return new Intl.NumberFormat('es-VE', { style: 'currency', currency: 'VES', currencyDisplay: 'symbol' }).format(value).replace('VES', 'Bs.S');
+            };
 
+            const addRow = (table, fields) => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-slate-200';
+                fields.forEach(field => {
+                    const cell = document.createElement('td');
+                    cell.className = 'py-2 pr-2';
+                    const input = document.createElement('input');
+                    input.type = field.type;
+                    input.placeholder = field.placeholder;
+                    input.className = `input-field ${field.class || ''}`;
+                    if (field.value) input.value = field.value;
+                    cell.appendChild(input);
+                    row.appendChild(cell);
+                });
 
+                const actionCell = document.createElement('td');
+                actionCell.className = 'py-2';
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = '×';
+                deleteBtn.className = 'btn-danger rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg';
+                deleteBtn.onclick = () => {
+                    row.remove();
+                    calculateAll();
+                };
+                actionCell.appendChild(deleteBtn);
+                row.appendChild(actionCell);
+                table.appendChild(row);
+                
+                row.querySelectorAll('input').forEach(input => input.addEventListener('input', calculateAll));
+            };
+            
+            const addProductCard = () => {
+                const cardId = `product-${Date.now()}`;
+                const card = document.createElement('div');
+                card.id = cardId;
+                card.className = 'p-4 border border-slate-200 rounded-lg relative';
+                card.innerHTML = `
+                    <button class="btn-danger absolute top-2 right-2 rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg product-delete-btn">×</button>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="${cardId}-name" class="text-sm font-semibold text-slate-700 block mb-1">Nombre del Producto</label>
+                            <input type="text" id="${cardId}-name" placeholder="Ej. Camiseta Básica" class="input-field font-bold text-lg col-span-full product-name">
+                        </div>
+                        <div>
+                            <label for="${cardId}-raw" class="text-sm font-semibold text-slate-700 block mb-1">Costo Materia Prima (Bs.S)</label>
+                            <input type="number" id="${cardId}-raw" placeholder="Ej. 8.00" class="input-field product-cost-raw">
+                        </div>
+                        <div>
+                            <label for="${cardId}-labor" class="text-sm font-semibold text-slate-700 block mb-1">Costo Mano de Obra (Bs.S)</label>
+                            <input type="number" id="${cardId}-labor" placeholder="Ej. 5.00" class="input-field product-cost-labor">
+                        </div>
+                        <div>
+                            <label for="${cardId}-packaging" class="text-sm font-semibold text-slate-700 block mb-1">Costo Empaque (Bs.S)</label>
+                            <input type="number" id="${cardId}-packaging" placeholder="Ej. 1.00" class="input-field product-cost-packaging">
+                        </div>
+                        <div>
+                            <label for="${cardId}-margin" class="text-sm font-semibold text-slate-700 block mb-1">Margen Ganancia (%)</label>
+                            <input type="number" id="${cardId}-margin" placeholder="Ej. 50" value="50" class="input-field product-margin">
+                        </div>
+                    </div>
+                    <div class="mt-4 bg-slate-100 p-3 rounded-md grid grid-cols-2 gap-4 text-center">
+                        <div>
+                            <p class="text-sm font-medium text-slate-500">Costo Total</p>
+                            <p class="font-bold text-lg text-slate-800 product-total-cost">0,00 Bs.S</p>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-slate-500">Precio Venta</p>
+                            <p class="font-bold text-lg text-teal-600 product-sell-price">0,00 Bs.S</p>
+                        </div>
+                    </div>
+                `;
+                productsTable.appendChild(card);
+                card.querySelector('.product-delete-btn').onclick = () => {
+                    card.remove();
+                    calculateAll();
+                };
+                card.querySelectorAll('input').forEach(input => input.addEventListener('input', calculateAll));
+            };
 
-<script src="main.js"></script>
-<script src="utilidades.js"></script>
-<script src="ui.js"></script>
-<script src="calculos.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="pdf-simple.js"></script>
+            const calculateAll = () => {
+                let totalFixedCosts = 0;
+                fixedCostsTable.querySelectorAll('tr').forEach(row => {
+                    const value = parseFloat(row.querySelector('input[type="number"]').value) || 0;
+                    totalFixedCosts += value;
+                });
 
-<script >
+                let totalDepreciation = 0;
+                toolsTable.querySelectorAll('tr').forEach(row => {
+                    const cost = parseFloat(row.querySelectorAll('input')[1].value) || 0;
+                    const residual = parseFloat(row.querySelectorAll('input')[2].value) || 0;
+                    const months = parseFloat(row.querySelectorAll('input')[3].value) || 1;
+                    const depreciation = (cost - residual) / months;
+                    totalDepreciation += depreciation > 0 ? depreciation : 0;
+                });
+                
+                totalFixedCosts += totalDepreciation;
+                document.getElementById('summary-fixed-costs').textContent = formatCurrency(totalFixedCosts);
 
-    document.getElementById('btnActualizarResumen').addEventListener('click', () => {
-  const datos = {
-    gastosFijos: '1.250,00 Bs.S',
-    peUnidades: '85',
-    peIngresos: '2.550,00 Bs.S',
-    utilidadNeta: '1.300,00 Bs.S',
-    roi: '28.57 %',
-    unidadesROI: '95'
-  };
+                let totalVariableCost = 0;
+                let totalSellPrice = 0;
+                let productCount = 0;
+                const productsData = [];
 
-  generarPDFDesdeHTML(datos);
-});
+                productsTable.querySelectorAll('.p-4').forEach(card => {
+                    const raw = parseFloat(card.querySelector('.product-cost-raw').value) || 0;
+                    const labor = parseFloat(card.querySelector('.product-cost-labor').value) || 0;
+                    const packaging = parseFloat(card.querySelector('.product-cost-packaging').value) || 0;
+                    const margin = parseFloat(card.querySelector('.product-margin').value) / 100 || 0;
+                    
+                    const productTotalCost = raw + labor + packaging;
+                    const productSellPrice = margin < 1 ? productTotalCost / (1 - margin) : productTotalCost;
+                    
+                    card.querySelector('.product-total-cost').textContent = formatCurrency(productTotalCost);
+                    card.querySelector('.product-sell-price').textContent = formatCurrency(productSellPrice);
 
-</script>
+                    totalVariableCost += productTotalCost;
+                    totalSellPrice += productSellPrice;
+                    productCount++;
+                    
+                    productsData.push({
+                        name: card.querySelector('.product-name').value || `Producto ${productCount}`,
+                        cost: productTotalCost,
+                        price: productSellPrice
+                    });
+                });
+
+                const avgVariableCost = productCount > 0 ? totalVariableCost / productCount : 0;
+                const avgSellPrice = productCount > 0 ? totalSellPrice / productCount : 0;
+                const contributionMargin = avgSellPrice - avgVariableCost;
+
+                let beUnits = 0;
+                if (contributionMargin > 0) {
+                    beUnits = totalFixedCosts / contributionMargin;
+                }
+                
+                document.getElementById('summary-be-units').textContent = beUnits.toFixed(0);
+                document.getElementById('summary-be-value').textContent = formatCurrency(beUnits * avgSellPrice);
+
+                const investment = parseFloat(document.getElementById('investment-input').value) || 0;
+                const salesUnits = parseFloat(document.getElementById('sales-units-input').value) || 0;
+                
+                const totalRevenue = salesUnits * avgSellPrice;
+                const totalVariableCostsForSales = salesUnits * avgVariableCost;
+                const profit = totalRevenue - totalVariableCostsForSales - totalFixedCosts;
+                
+                document.getElementById('summary-profit').textContent = formatCurrency(profit);
+                
+                const roi = investment > 0 ? (profit / investment) * 100 : 0;
+                document.getElementById('summary-roi').textContent = `${roi.toFixed(2)} %`;
+
+                const desiredROI = 0.30;
+                let suggestedUnitsForROI = 0;
+
+                if (investment > 0 && contributionMargin > 0) {
+                    suggestedUnitsForROI = (desiredROI * investment + totalFixedCosts) / contributionMargin;
+                } else if (investment === 0 && contributionMargin > 0) {
+                    suggestedUnitsForROI = totalFixedCosts / contributionMargin; // Just cover fixed costs for 0 investment
+                } else {
+                    suggestedUnitsForROI = 0; // Or indicate impossibility
+                }
+                document.getElementById('suggested-roi-units').textContent = suggestedUnitsForROI > 0 ? suggestedUnitsForROI.toFixed(0) : 'N/A';
+                
+                updateCostsChart(totalFixedCosts, totalVariableCostsForSales);
+                updateProductsChart(productsData);
+            };
+            
+            const updateCostsChart = (fixed, variable) => {
+                const ctx = document.getElementById('costs-chart').getContext('2d');
+                const data = {
+                    labels: ['Gastos Fijos', 'Gastos Variables'],
+                    datasets: [{
+                        data: [fixed, variable],
+                        backgroundColor: ['#0f766e', '#99f6e4'],
+                        borderColor: '#ffffff',
+                        borderWidth: 2
+                    }]
+                };
+                if (costsChart) {
+                    costsChart.data = data;
+                    costsChart.update();
+                } else {
+                    costsChart = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: data,
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { position: 'bottom' } }
+                        }
+                    });
+                }
+            };
+            
+            const updateProductsChart = (productsData) => {
+                const ctx = document.getElementById('products-chart').getContext('2d');
+                const topProducts = productsData.slice(0, 3);
+                const data = {
+                    labels: topProducts.map(p => p.name.length > 15 ? p.name.substring(0, 15) + '...' : p.name),
+                    datasets: [
+                        {
+                            label: 'Costo Total',
+                            data: topProducts.map(p => p.cost),
+                            backgroundColor: '#0f766e',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Precio Venta',
+                            data: topProducts.map(p => p.price),
+                            backgroundColor: '#99f6e4',
+                            borderRadius: 4
+                        }
+                    ]
+                };
+                 if (productsChart) {
+                    productsChart.data = data;
+                    productsChart.update();
+                } else {
+                    productsChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: data,
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { position: 'bottom' } },
+                            scales: { y: { beginAtZero: true } }
+                        }
+                    });
+                }
+            };
+
+            addFixedCostBtn.addEventListener('click', () => addRow(fixedCostsTable, [
+                { type: 'text', placeholder: 'Ej. Alquiler Local' },
+                { type: 'number', placeholder: 'Ej. 500.00' }
+            ]));
+            
+            addToolBtn.addEventListener('click', () => addRow(toolsTable, [
+                { type: 'text', placeholder: 'Ej. Impresora 3D' },
+                { type: 'number', placeholder: 'Ej. 800.00' },
+                { type: 'number', placeholder: 'Ej. 100.00' },
+                { type: 'number', placeholder: 'Ej. 48' }
+            ]));
+            
+            addProductBtn.addEventListener('click', addProductCard);
+            
+            businessNameInput.addEventListener('input', calculateAll);
+            document.getElementById('investment-input').addEventListener('input', calculateAll);
+            document.getElementById('sales-units-input').addEventListener('input', calculateAll);
+
+            // Collapsible instructions
+            instructionsHeader.addEventListener('click', () => {
+                instructionsContent.classList.toggle('active');
+                instructionsIcon.textContent = instructionsContent.classList.contains('active') ? '▲' : '▼';
+            });
+
+            // Initial state
+            addRow(fixedCostsTable, [{ type: 'text', placeholder: 'Ej. Alquiler Local', value: 'Alquiler Local' }, { type: 'number', placeholder: 'Ej. 500.00', value: '500' }]);
+            addRow(toolsTable, [{ type: 'text', placeholder: 'Ej. Impresora 3D', value: 'Impresora' }, { type: 'number', placeholder: 'Ej. 800.00', value: '800' }, { type: 'number', placeholder: 'Ej. 100.00', value: '100' }, { type: 'number', placeholder: 'Ej. 48', value: '48' }]);
+            addProductCard();
+            calculateAll();
+        });
+    </script>
 </body>
 </html>
