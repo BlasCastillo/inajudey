@@ -163,6 +163,15 @@
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
+  <header id="pdf-header" class="flex items-center justify-center p-4 bg-white border-b border-gray-200">
+    <div class="flex items-center gap-4">
+        <img id="logo-inajudey" src="inajudey.jpg" alt="Logo de Inajudey" class="h-24">
+        <h1 class="text-center font-bold text-lg md:text-xl text-gray-800">
+            Intituto Autónomo de la Juventud del Estado Yaracuy
+        </h1>
+        <img id="logo-secundario" src="logo2.jpg" alt="Logo de Yaracuy" class="h-24">
+    </div>
+</header>
 
     <div class="container mx-auto p-4 md:p-8 max-w-7xl">
         <header class="text-center mb-12">
@@ -172,7 +181,7 @@
                 <label for="business-name-input" class="font-semibold text-slate-700 block mb-2">Nombre de tu Negocio:</label>
                 <input type="text" id="business-name-input" placeholder="Ej. Mi Tienda de Artesanías" class="input-field max-w-md mx-auto text-center text-xl font-bold">
             </div>
-        </header>
+        
 
         <main id="main-dashboard-content" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Columna de Entradas de Datos -->
@@ -361,7 +370,12 @@
         const modalBeValueEl = document.getElementById('modal-be-value');
         const modalProfitEl = document.getElementById('modal-profit');
         const modalRoiEl = document.getElementById('modal-roi');
+        const modalProfitLabelEl = document.getElementById('modal-profit-label');
         const generatePdfBtn = document.getElementById('generate-pdf-btn');
+
+        // Nuevos elementos para el PDF
+        const logoInajudey = document.getElementById('logo-inajudey');
+        const logoSecundario = document.getElementById('logo-secundario');
         
         let costsChart, productsChart;
         const currencySymbol = 'Bs.S';
@@ -583,6 +597,10 @@
             modalAverageMarginEl.textContent = formatPercentage(averageMargin);
             modalBeUnitsEl.textContent = isFinite(beUnits) ? Math.ceil(Math.max(0, beUnits)) : 0;
             modalBeValueEl.textContent = isFinite(beValue) ? formatCurrency(beValue) : formatCurrency(0);
+
+            // Actualiza el texto de la etiqueta con las unidades de venta actuales
+            modalProfitLabelEl.textContent = `Utilidad Neta Estimada (con ${salesUnitsInput.value || 0} unid.):`;
+
             modalProfitEl.textContent = formatCurrency(profit);
             modalProfitEl.className = `text-2xl font-bold mt-1 ${profit >= 0 ? 'text-green-700' : 'text-red-600'}`;
             modalRoiEl.textContent = formatPercentage(roi);
@@ -590,23 +608,44 @@
         }
         
         // Función para generar el PDF de forma programática
+           
         function generateModalPDF() {
+            // Variable para el código Base64 del logo de Inajudey
+            
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             let yOffset = 20; // Posición vertical inicial para el texto
 
-            // Título
+            // 1. Añadir el encabezado al PDF
+            // Añadir logo izquierdo
+            if (logoInajudey) {
+                const imgData = logoInajudey.src;
+                doc.addImage(imgData, 'JPEG', 15, yOffset - 10, 20, 20);
+            }
+            // Añadir título
+            doc.setFontSize(14);
+            doc.text("Intituto Autónomo de la Juventud del Estado Yaracuy", 105, yOffset, null, null, "center");
+            
+            // Añadir logo derecho
+            if (logoSecundario) {
+                const imgData = logoSecundario.src;
+                doc.addImage(imgData, 'JPEG', 180, yOffset - 10, 20, 20);
+            }
+            yOffset += 20; // Espacio después del encabezado
+            doc.line(15, yOffset, 195, yOffset); // Línea divisoria
+            yOffset += 10;
+
+            // 2. Título del Resumen
             doc.setFontSize(22);
             doc.text("Resumen Financiero Detallado", 105, yOffset, null, null, "center");
             yOffset += 15;
 
-            // Sección de Resumen General
+            // 3. Sección de Resumen General
             doc.setFontSize(16);
             doc.text("Resumen General", 15, yOffset);
             yOffset += 10;
             doc.setFontSize(12);
 
-            // Obtener valores de la modal para asegurar que estén actualizados
             const productCount = document.getElementById('modal-product-count').textContent;
             const totalInvestment = document.getElementById('modal-total-investment').textContent;
             const totalFixedCosts = document.getElementById('modal-total-fixed-costs').textContent;
@@ -615,8 +654,8 @@
             const beValue = document.getElementById('modal-be-value').textContent;
             const profit = document.getElementById('modal-profit').textContent;
             const roi = document.getElementById('modal-roi').textContent;
+            const profitLabel = modalProfitLabelEl.textContent;
 
-            // Agregar datos al PDF
             doc.text(`Total de Productos Definidos: ${productCount}`, 15, yOffset);
             yOffset += 7;
             doc.text(`Inversión Inicial Total: ${totalInvestment}`, 15, yOffset);
@@ -626,7 +665,7 @@
             doc.text(`Margen Promedio de Productos: ${averageMargin}`, 15, yOffset);
             yOffset += 15;
 
-            // Sección Punto de Equilibrio
+            // 4. Sección Punto de Equilibrio
             doc.setFontSize(16);
             doc.text("Punto de Equilibrio", 15, yOffset);
             yOffset += 10;
@@ -636,12 +675,12 @@
             doc.text(`En Ingresos: ${beValue}`, 15, yOffset);
             yOffset += 15;
             
-            // Sección Proyección de Rentabilidad
+            // 5. Sección Proyección de Rentabilidad
             doc.setFontSize(16);
             doc.text("Proyección de Rentabilidad", 15, yOffset);
             yOffset += 10;
             doc.setFontSize(12);
-            doc.text(`Utilidad Neta Estimada: ${profit}`, 15, yOffset);
+            doc.text(`${profitLabel} ${profit}`, 15, yOffset);
             yOffset += 7;
             doc.text(`Retorno de Inversión (ROI): ${roi}`, 15, yOffset);
             yOffset += 15;
@@ -747,7 +786,7 @@
                 <h3 class="text-xl font-bold text-green-800 mb-2">Proyección de Rentabilidad</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <span class="text-sm font-semibold text-slate-500">Utilidad Neta Estimada (con ${document.getElementById('sales-units-input')?.value || 0} unid.):</span>
+                        <span id="modal-profit-label" class="text-sm font-semibold text-slate-500">Utilidad Neta Estimada:</span>
                         <p id="modal-profit" class="text-2xl font-bold text-green-700 mt-1">0,00 Bs.S</p>
                     </div>
                     <div>
