@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+      document.addEventListener('DOMContentLoaded', () => {
             const businessNameInput = document.getElementById('business-name-input');
             const fixedCostsTable = document.getElementById('fixed-costs-table');
             const addFixedCostBtn = document.getElementById('add-fixed-cost-btn');
@@ -277,15 +277,3 @@ document.addEventListener('DOMContentLoaded', () => {
             addProductCard();
             calculateAll();
         });
-
-        document.getElementById('generate-full-pdf').addEventListener('click', () => {
-    calculateAll(); // Asegura datos actualizados
-
-    html2pdf().from(document.body).set({
-        margin: 10,
-        filename: 'dashboard_completo.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    }).save();
-});

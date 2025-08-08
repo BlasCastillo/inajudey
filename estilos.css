@@ -1,4 +1,4 @@
-    body {
+body {
             font-family: 'Inter', sans-serif;
             background-color: #f8fafc;
         }
@@ -121,35 +121,3 @@
             max-height: 500px; /* Adjust as needed for content */
             padding-bottom: 1rem;
         }
-        .hidden-print {
-  visibility: hidden;
-  height: 0;
-  overflow: hidden;
-  position: relative;
-}
-
-        #pdf-summary {
-  font-family: 'Inter', sans-serif;
-  background-color: #ffffff;
-  color: #1a202c;
-  padding: 2rem;
-  border-radius: 1rem;
-  box-shadow: 0 0 0 1px #e2e8f0;
-  width: 100%;
-  max-width: 700px;
-  margin: auto;
-}
-#pdf-summary h2 {
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
-  color: #2d3748;
-}
-#pdf-summary p {
-  margin-bottom: 0.75rem;
-  font-size: 1rem;
-}
-#pdf-summary span {
-  font-weight: bold;
-  color: #0f766e;
-}
-

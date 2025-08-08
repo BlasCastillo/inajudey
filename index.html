@@ -136,7 +136,30 @@
         .collapsible-content.active {
             max-height: 500px; /* Adjust as needed for content */
             padding-bottom: 1rem;
+
         }
+        /* Estilos para el contenedor de la modal, el fondo semi-transparente */
+    #summary-modal {
+        transition: opacity 0.3s ease-in-out;
+    }
+
+    /* Estilos para el contenido de la modal */
+    .modal-content {
+        /* Define el ancho y alto máximo como porcentaje del viewport (pantalla) */
+        max-width: 90vw;   /* 90% del ancho del viewport */
+        max-height: 90vh;  /* 90% del alto del viewport */
+        
+        /* Asegura que el contenido sea desplazable si excede el tamaño máximo */
+        overflow-y: auto;
+    }
+
+    /* Opcional: Estilos para pantallas más grandes, ajusta según sea necesario */
+    @media (min-width: 768px) {
+        .modal-content {
+            max-width: 80vw;
+            max-height: 80vh;
+        }
+    }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -227,6 +250,7 @@
             </div>
 
             <!-- Columna de Resumen Financiero (Dashboard) -->
+             
             <aside class="lg:col-span-1 space-y-8">
                 <div class="sticky top-8">
                     <section id="summary" class="card">
@@ -291,290 +315,456 @@
 
                     </section>
                 </div>
+
+                
             </aside>
+            
         </main>
+        <div class="mt-8 text-center">
+                    <button id="open-summary-modal-btn" class="btn btn-primary w-full md:w-auto">Ver Resumen Detallado</button>
+                </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const businessNameInput = document.getElementById('business-name-input');
-            const fixedCostsTable = document.getElementById('fixed-costs-table');
-            const addFixedCostBtn = document.getElementById('add-fixed-cost-btn');
-            const toolsTable = document.getElementById('tools-table');
-            const addToolBtn = document.getElementById('add-tool-btn');
-            const productsTable = document.getElementById('products-table');
-            const addProductBtn = document.getElementById('add-product-btn');
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- Variables y elementos del DOM ---
+        const businessNameInput = document.getElementById('business-name-input');
+        const fixedCostsTable = document.getElementById('fixed-costs-table');
+        const addFixedCostBtn = document.getElementById('add-fixed-cost-btn');
+        const toolsTable = document.getElementById('tools-table');
+        const addToolBtn = document.getElementById('add-tool-btn');
+        const productsTable = document.getElementById('products-table');
+        const addProductBtn = document.getElementById('add-product-btn');
+        const investmentInput = document.getElementById('investment-input');
+        const salesUnitsInput = document.getElementById('sales-units-input');
 
-            const instructionsHeader = document.getElementById('instructions-header');
-            const instructionsContent = document.getElementById('instructions-content');
-            const instructionsIcon = document.getElementById('instructions-icon');
+        const summaryFixedCostsEl = document.getElementById('summary-fixed-costs');
+        const summaryBeUnitsEl = document.getElementById('summary-be-units');
+        const summaryBeValueEl = document.getElementById('summary-be-value');
+        const summaryProfitEl = document.getElementById('summary-profit');
+        const summaryRoiEl = document.getElementById('summary-roi');
+        const suggestedRoiUnitsEl = document.getElementById('suggested-roi-units');
 
-            let costsChart, productsChart;
+        const instructionsHeader = document.getElementById('instructions-header');
+        const instructionsContent = document.getElementById('instructions-content');
+        const instructionsIcon = document.getElementById('instructions-icon');
 
-            const formatCurrency = (value) => {
-                return new Intl.NumberFormat('es-VE', { style: 'currency', currency: 'VES', currencyDisplay: 'symbol' }).format(value).replace('VES', 'Bs.S');
+        // Modal elements
+        const openSummaryModalBtn = document.getElementById('open-summary-modal-btn');
+        const summaryModal = document.getElementById('summary-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const modalProductCountEl = document.getElementById('modal-product-count');
+        const modalTotalInvestmentEl = document.getElementById('modal-total-investment');
+        const modalTotalFixedCostsEl = document.getElementById('modal-total-fixed-costs');
+        const modalAverageMarginEl = document.getElementById('modal-average-margin');
+        const modalBeUnitsEl = document.getElementById('modal-be-units');
+        const modalBeValueEl = document.getElementById('modal-be-value');
+        const modalProfitEl = document.getElementById('modal-profit');
+        const modalRoiEl = document.getElementById('modal-roi');
+        const generatePdfBtn = document.getElementById('generate-pdf-btn');
+        
+        let costsChart, productsChart;
+        const currencySymbol = 'Bs.S';
+        const defaultRoiTarget = 30;
+
+        // --- Funciones de utilidad ---
+        const formatCurrency = (value) => {
+            return new Intl.NumberFormat('es-VE', { style: 'currency', currency: 'VES' }).format(value).replace('VES', currencySymbol);
+        };
+        const formatPercentage = (value) => {
+            return value.toFixed(2) + ' %';
+        };
+
+        // --- Lógica para añadir filas y cards dinámicamente ---
+        const addRow = (table, fields) => {
+            const row = document.createElement('tr');
+            row.className = 'border-b border-slate-200 last:border-b-0';
+            fields.forEach(field => {
+                const cell = document.createElement('td');
+                cell.className = 'py-2 pr-2';
+                const input = document.createElement('input');
+                input.type = field.type;
+                input.placeholder = field.placeholder;
+                input.className = `input-field ${field.class || ''}`;
+                if (field.value) input.value = field.value;
+                cell.appendChild(input);
+                row.appendChild(cell);
+            });
+            const actionCell = document.createElement('td');
+            actionCell.className = 'py-2';
+            const deleteBtn = document.createElement('button');
+            deleteBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>';
+            deleteBtn.className = 'btn btn-danger w-8 h-8 flex items-center justify-center';
+            deleteBtn.onclick = () => {
+                row.remove();
+                calculateAll();
             };
-
-            const addRow = (table, fields) => {
-                const row = document.createElement('tr');
-                row.className = 'border-b border-slate-200';
-                fields.forEach(field => {
-                    const cell = document.createElement('td');
-                    cell.className = 'py-2 pr-2';
-                    const input = document.createElement('input');
-                    input.type = field.type;
-                    input.placeholder = field.placeholder;
-                    input.className = `input-field ${field.class || ''}`;
-                    if (field.value) input.value = field.value;
-                    cell.appendChild(input);
-                    row.appendChild(cell);
-                });
-
-                const actionCell = document.createElement('td');
-                actionCell.className = 'py-2';
-                const deleteBtn = document.createElement('button');
-                deleteBtn.textContent = '×';
-                deleteBtn.className = 'btn-danger rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg';
-                deleteBtn.onclick = () => {
-                    row.remove();
-                    calculateAll();
-                };
-                actionCell.appendChild(deleteBtn);
-                row.appendChild(actionCell);
-                table.appendChild(row);
-                
-                row.querySelectorAll('input').forEach(input => input.addEventListener('input', calculateAll));
-            };
-            
-            const addProductCard = () => {
-                const cardId = `product-${Date.now()}`;
-                const card = document.createElement('div');
-                card.id = cardId;
-                card.className = 'p-4 border border-slate-200 rounded-lg relative';
-                card.innerHTML = `
-                    <button class="btn-danger absolute top-2 right-2 rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg product-delete-btn">×</button>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="${cardId}-name" class="text-sm font-semibold text-slate-700 block mb-1">Nombre del Producto</label>
-                            <input type="text" id="${cardId}-name" placeholder="Ej. Camiseta Básica" class="input-field font-bold text-lg col-span-full product-name">
-                        </div>
-                        <div>
-                            <label for="${cardId}-raw" class="text-sm font-semibold text-slate-700 block mb-1">Costo Materia Prima (Bs.S)</label>
-                            <input type="number" id="${cardId}-raw" placeholder="Ej. 8.00" class="input-field product-cost-raw">
-                        </div>
-                        <div>
-                            <label for="${cardId}-labor" class="text-sm font-semibold text-slate-700 block mb-1">Costo Mano de Obra (Bs.S)</label>
-                            <input type="number" id="${cardId}-labor" placeholder="Ej. 5.00" class="input-field product-cost-labor">
-                        </div>
-                        <div>
-                            <label for="${cardId}-packaging" class="text-sm font-semibold text-slate-700 block mb-1">Costo Empaque (Bs.S)</label>
-                            <input type="number" id="${cardId}-packaging" placeholder="Ej. 1.00" class="input-field product-cost-packaging">
-                        </div>
-                        <div>
-                            <label for="${cardId}-margin" class="text-sm font-semibold text-slate-700 block mb-1">Margen Ganancia (%)</label>
-                            <input type="number" id="${cardId}-margin" placeholder="Ej. 50" value="50" class="input-field product-margin">
-                        </div>
+            actionCell.appendChild(deleteBtn);
+            row.appendChild(actionCell);
+            table.appendChild(row);
+            row.querySelectorAll('input').forEach(input => input.addEventListener('input', calculateAll));
+        };
+        
+        const addProductCard = () => {
+            const cardId = `product-${Date.now()}`;
+            const card = document.createElement('div');
+            card.id = cardId;
+            card.className = 'card bg-slate-50';
+            card.innerHTML = `
+                <div class="flex items-center justify-between mb-4">
+                    <input type="text" id="${cardId}-name" placeholder="Nombre del Producto" class="input-field text-xl font-bold flex-grow product-name">
+                    <button class="btn btn-danger btn-sm ml-4 product-delete-btn">Eliminar</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="${cardId}-raw" class="font-semibold text-slate-700 block mb-1">Costo Variable Directo (Bs.S)</label>
+                        <input type="number" id="${cardId}-raw" placeholder="Ej. 100.00" class="input-field product-variable-cost" step="0.01">
+                        <p class="text-sm text-slate-500 mt-1">Materia prima, mano de obra, empaque, etc.</p>
                     </div>
-                    <div class="mt-4 bg-slate-100 p-3 rounded-md grid grid-cols-2 gap-4 text-center">
-                        <div>
-                            <p class="text-sm font-medium text-slate-500">Costo Total</p>
-                            <p class="font-bold text-lg text-slate-800 product-total-cost">0,00 Bs.S</p>
-                        </div>
-                        <div>
-                            <p class="text-sm font-medium text-slate-500">Precio Venta</p>
-                            <p class="font-bold text-lg text-teal-600 product-sell-price">0,00 Bs.S</p>
-                        </div>
+                    <div>
+                        <label for="${cardId}-margin" class="font-semibold text-slate-700 block mb-1">Margen de Ganancia (%)</label>
+                        <input type="number" id="${cardId}-margin" value="50" class="input-field product-margin" step="0.01">
+                        <p class="text-sm text-slate-500 mt-1">Porcentaje deseado de ganancia sobre el precio de venta.</p>
                     </div>
-                `;
-                productsTable.appendChild(card);
-                card.querySelector('.product-delete-btn').onclick = () => {
-                    card.remove();
-                    calculateAll();
-                };
-                card.querySelectorAll('input').forEach(input => input.addEventListener('input', calculateAll));
+                </div>
+                <div class="mt-4 p-4 rounded-lg border border-teal-200 bg-teal-50">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-teal-700">Precio de Venta Calculado:</span>
+                        <span class="text-xl font-extrabold text-teal-800 product-price">${formatCurrency(0)}</span>
+                    </div>
+                </div>
+            `;
+            productsTable.appendChild(card);
+            card.querySelector('.product-delete-btn').onclick = () => {
+                card.remove();
+                calculateAll();
             };
+            card.querySelectorAll('input').forEach(input => input.addEventListener('input', calculateAll));
+        };
 
-            const calculateAll = () => {
-                let totalFixedCosts = 0;
-                fixedCostsTable.querySelectorAll('tr').forEach(row => {
-                    const value = parseFloat(row.querySelector('input[type="number"]').value) || 0;
-                    totalFixedCosts += value;
-                });
-
-                let totalDepreciation = 0;
-                toolsTable.querySelectorAll('tr').forEach(row => {
-                    const cost = parseFloat(row.querySelectorAll('input')[1].value) || 0;
-                    const residual = parseFloat(row.querySelectorAll('input')[2].value) || 0;
-                    const months = parseFloat(row.querySelectorAll('input')[3].value) || 1;
-                    const depreciation = (cost - residual) / months;
-                    totalDepreciation += depreciation > 0 ? depreciation : 0;
-                });
-                
-                totalFixedCosts += totalDepreciation;
-                document.getElementById('summary-fixed-costs').textContent = formatCurrency(totalFixedCosts);
-
-                let totalVariableCost = 0;
-                let totalSellPrice = 0;
-                let productCount = 0;
-                const productsData = [];
-
-                productsTable.querySelectorAll('.p-4').forEach(card => {
-                    const raw = parseFloat(card.querySelector('.product-cost-raw').value) || 0;
-                    const labor = parseFloat(card.querySelector('.product-cost-labor').value) || 0;
-                    const packaging = parseFloat(card.querySelector('.product-cost-packaging').value) || 0;
-                    const margin = parseFloat(card.querySelector('.product-margin').value) / 100 || 0;
-                    
-                    const productTotalCost = raw + labor + packaging;
-                    const productSellPrice = margin < 1 ? productTotalCost / (1 - margin) : productTotalCost;
-                    
-                    card.querySelector('.product-total-cost').textContent = formatCurrency(productTotalCost);
-                    card.querySelector('.product-sell-price').textContent = formatCurrency(productSellPrice);
-
-                    totalVariableCost += productTotalCost;
-                    totalSellPrice += productSellPrice;
-                    productCount++;
-                    
-                    productsData.push({
-                        name: card.querySelector('.product-name').value || `Producto ${productCount}`,
-                        cost: productTotalCost,
-                        price: productSellPrice
-                    });
-                });
-
-                const avgVariableCost = productCount > 0 ? totalVariableCost / productCount : 0;
-                const avgSellPrice = productCount > 0 ? totalSellPrice / productCount : 0;
-                const contributionMargin = avgSellPrice - avgVariableCost;
-
-                let beUnits = 0;
-                if (contributionMargin > 0) {
-                    beUnits = totalFixedCosts / contributionMargin;
-                }
-                
-                document.getElementById('summary-be-units').textContent = beUnits.toFixed(0);
-                document.getElementById('summary-be-value').textContent = formatCurrency(beUnits * avgSellPrice);
-
-                const investment = parseFloat(document.getElementById('investment-input').value) || 0;
-                const salesUnits = parseFloat(document.getElementById('sales-units-input').value) || 0;
-                
-                const totalRevenue = salesUnits * avgSellPrice;
-                const totalVariableCostsForSales = salesUnits * avgVariableCost;
-                const profit = totalRevenue - totalVariableCostsForSales - totalFixedCosts;
-                
-                document.getElementById('summary-profit').textContent = formatCurrency(profit);
-                
-                const roi = investment > 0 ? (profit / investment) * 100 : 0;
-                document.getElementById('summary-roi').textContent = `${roi.toFixed(2)} %`;
-
-                const desiredROI = 0.30;
-                let suggestedUnitsForROI = 0;
-
-                if (investment > 0 && contributionMargin > 0) {
-                    suggestedUnitsForROI = (desiredROI * investment + totalFixedCosts) / contributionMargin;
-                } else if (investment === 0 && contributionMargin > 0) {
-                    suggestedUnitsForROI = totalFixedCosts / contributionMargin; // Just cover fixed costs for 0 investment
-                } else {
-                    suggestedUnitsForROI = 0; // Or indicate impossibility
-                }
-                document.getElementById('suggested-roi-units').textContent = suggestedUnitsForROI > 0 ? suggestedUnitsForROI.toFixed(0) : 'N/A';
-                
-                updateCostsChart(totalFixedCosts, totalVariableCostsForSales);
-                updateProductsChart(productsData);
-            };
-            
-            const updateCostsChart = (fixed, variable) => {
-                const ctx = document.getElementById('costs-chart').getContext('2d');
-                const data = {
-                    labels: ['Gastos Fijos', 'Gastos Variables'],
-                    datasets: [{
-                        data: [fixed, variable],
-                        backgroundColor: ['#0f766e', '#99f6e4'],
-                        borderColor: '#ffffff',
-                        borderWidth: 2
-                    }]
-                };
-                if (costsChart) {
-                    costsChart.data = data;
-                    costsChart.update();
-                } else {
-                    costsChart = new Chart(ctx, {
-                        type: 'doughnut',
-                        data: data,
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: { legend: { position: 'bottom' } }
-                        }
-                    });
-                }
-            };
-            
-            const updateProductsChart = (productsData) => {
-                const ctx = document.getElementById('products-chart').getContext('2d');
-                const topProducts = productsData.slice(0, 3);
-                const data = {
-                    labels: topProducts.map(p => p.name.length > 15 ? p.name.substring(0, 15) + '...' : p.name),
-                    datasets: [
-                        {
-                            label: 'Costo Total',
-                            data: topProducts.map(p => p.cost),
-                            backgroundColor: '#0f766e',
-                            borderRadius: 4
-                        },
-                        {
-                            label: 'Precio Venta',
-                            data: topProducts.map(p => p.price),
-                            backgroundColor: '#99f6e4',
-                            borderRadius: 4
-                        }
-                    ]
-                };
-                 if (productsChart) {
-                    productsChart.data = data;
-                    productsChart.update();
-                } else {
-                    productsChart = new Chart(ctx, {
-                        type: 'bar',
-                        data: data,
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: { legend: { position: 'bottom' } },
-                            scales: { y: { beginAtZero: true } }
-                        }
-                    });
-                }
-            };
-
-            addFixedCostBtn.addEventListener('click', () => addRow(fixedCostsTable, [
-                { type: 'text', placeholder: 'Ej. Alquiler Local' },
-                { type: 'number', placeholder: 'Ej. 500.00' }
-            ]));
-            
-            addToolBtn.addEventListener('click', () => addRow(toolsTable, [
-                { type: 'text', placeholder: 'Ej. Impresora 3D' },
-                { type: 'number', placeholder: 'Ej. 800.00' },
-                { type: 'number', placeholder: 'Ej. 100.00' },
-                { type: 'number', placeholder: 'Ej. 48' }
-            ]));
-            
-            addProductBtn.addEventListener('click', addProductCard);
-            
-            businessNameInput.addEventListener('input', calculateAll);
-            document.getElementById('investment-input').addEventListener('input', calculateAll);
-            document.getElementById('sales-units-input').addEventListener('input', calculateAll);
-
-            // Collapsible instructions
-            instructionsHeader.addEventListener('click', () => {
-                instructionsContent.classList.toggle('active');
-                instructionsIcon.textContent = instructionsContent.classList.contains('active') ? '▲' : '▼';
+        // --- Lógica principal de cálculo ---
+        const calculateAll = () => {
+            // 1. Recolectar datos y calcular totales
+            let totalFixedCosts = 0;
+            fixedCostsTable.querySelectorAll('tr').forEach(row => {
+                const value = parseFloat(row.querySelectorAll('input')[1].value) || 0;
+                totalFixedCosts += value;
             });
 
-            // Initial state
-            addRow(fixedCostsTable, [{ type: 'text', placeholder: 'Ej. Alquiler Local', value: 'Alquiler Local' }, { type: 'number', placeholder: 'Ej. 500.00', value: '500' }]);
-            addRow(toolsTable, [{ type: 'text', placeholder: 'Ej. Impresora 3D', value: 'Impresora' }, { type: 'number', placeholder: 'Ej. 800.00', value: '800' }, { type: 'number', placeholder: 'Ej. 100.00', value: '100' }, { type: 'number', placeholder: 'Ej. 48', value: '48' }]);
-            addProductCard();
-            calculateAll();
+            let totalDepreciation = 0;
+            toolsTable.querySelectorAll('tr').forEach(row => {
+                const cost = parseFloat(row.querySelectorAll('input')[1].value) || 0;
+                const residual = parseFloat(row.querySelectorAll('input')[2].value) || 0;
+                const months = parseFloat(row.querySelectorAll('input')[3].value) || 1;
+                const depreciation = (cost - residual) / months;
+                totalDepreciation += depreciation > 0 ? depreciation : 0;
+            });
+            
+            const totalFixedAndDepreciation = totalFixedCosts + totalDepreciation;
+            summaryFixedCostsEl.textContent = formatCurrency(totalFixedAndDepreciation);
+
+            let totalVariableCost = 0;
+            let totalSellPrice = 0;
+            let totalMargin = 0;
+            let productCount = 0;
+            const productsData = [];
+
+            productsTable.querySelectorAll('.card.bg-slate-50').forEach(card => {
+                const variableCost = parseFloat(card.querySelector('.product-variable-cost').value) || 0;
+                const margin = parseFloat(card.querySelector('.product-margin').value) / 100 || 0;
+                
+                const productSellPrice = margin < 1 ? variableCost / (1 - margin) : variableCost;
+                
+                card.querySelector('.product-price').textContent = formatCurrency(productSellPrice);
+
+                totalVariableCost += variableCost;
+                totalSellPrice += productSellPrice;
+                totalMargin += parseFloat(card.querySelector('.product-margin').value) || 0;
+                productCount++;
+                
+                productsData.push({
+                    name: card.querySelector('.product-name').value || `Producto ${productCount}`,
+                    cost: variableCost,
+                    price: productSellPrice
+                });
+            });
+
+            // 2. Calcular promedios para métricas globales
+            const avgVariableCost = productCount > 0 ? totalVariableCost / productCount : 0;
+            const avgSellPrice = productCount > 0 ? totalSellPrice / productCount : 0;
+            const contributionMargin = avgSellPrice - avgVariableCost;
+
+            // 3. Calcular métricas principales
+            let beUnits = 0;
+            if (contributionMargin > 0) {
+                beUnits = totalFixedAndDepreciation / contributionMargin;
+            }
+            const beValue = beUnits * avgSellPrice;
+            
+            summaryBeUnitsEl.textContent = isFinite(beUnits) ? Math.ceil(Math.max(0, beUnits)) : 0;
+            summaryBeValueEl.textContent = isFinite(beValue) ? formatCurrency(beValue) : formatCurrency(0);
+
+            const investment = parseFloat(investmentInput.value) || 0;
+            const salesUnits = parseFloat(salesUnitsInput.value) || 0;
+            
+            const totalRevenue = salesUnits * avgSellPrice;
+            const totalVariableCostsForSales = salesUnits * avgVariableCost;
+            const profit = totalRevenue - totalVariableCostsForSales - totalFixedAndDepreciation;
+            
+            summaryProfitEl.textContent = formatCurrency(profit);
+            summaryProfitEl.className = `text-2xl font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`;
+
+            const roi = investment > 0 ? (profit / investment) * 100 : 0;
+            summaryRoiEl.textContent = formatPercentage(roi);
+            summaryRoiEl.className = `text-2xl font-bold ${roi >= 0 ? 'text-green-600' : 'text-red-600'}`;
+
+            let suggestedUnitsForROI = 0;
+            if (investment > 0 && contributionMargin > 0) {
+                suggestedUnitsForROI = ((defaultRoiTarget / 100) * investment + totalFixedAndDepreciation) / contributionMargin;
+            }
+            suggestedRoiUnitsEl.textContent = isFinite(suggestedUnitsForROI) ? Math.ceil(Math.max(0, suggestedUnitsForROI)) : 'N/A';
+            
+            // 4. Actualizar gráficos y modal
+            updateCostsChart(totalFixedAndDepreciation, totalVariableCostsForSales);
+            updateProductsChart(productsData);
+            updateModalSummary(productCount, totalFixedAndDepreciation, investment, totalMargin, beUnits, beValue, profit, roi);
+        };
+        
+        // --- Funciones para actualizar gráficos y modal ---
+        const updateCostsChart = (fixed, variable) => {
+            const ctx = document.getElementById('costs-chart').getContext('2d');
+            const data = {
+                labels: ['Gastos Fijos', 'Gastos Variables'],
+                datasets: [{
+                    data: [fixed, variable],
+                    backgroundColor: ['#2dd4bf', '#0f766e'],
+                    hoverOffset: 4
+                }]
+            };
+            if (costsChart) {
+                costsChart.data = data;
+                costsChart.update();
+            } else {
+                costsChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: data,
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                });
+            }
+        };
+
+        const updateProductsChart = (productsData) => {
+            const ctx = document.getElementById('products-chart').getContext('2d');
+            const topProducts = productsData.slice(0, 3);
+            const data = {
+                labels: topProducts.map(p => p.name.length > 15 ? p.name.substring(0, 15) + '...' : p.name),
+                datasets: [
+                    { label: 'Costo Unitario', data: topProducts.map(p => p.cost), backgroundColor: '#14b8a6', borderRadius: 4 },
+                    { label: 'Precio de Venta', data: topProducts.map(p => p.price), backgroundColor: '#0d9488', borderRadius: 4 }
+                ]
+            };
+            if (productsChart) {
+                productsChart.data = data;
+                productsChart.update();
+            } else {
+                productsChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: data,
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true } } }
+                });
+            }
+        };
+
+        const updateModalSummary = (productCount, totalFixedCosts, investment, totalMargin, beUnits, beValue, profit, roi) => {
+            const averageMargin = productCount > 0 ? totalMargin / productCount : 0;
+            modalProductCountEl.textContent = productCount;
+            modalTotalInvestmentEl.textContent = formatCurrency(investment);
+            modalTotalFixedCostsEl.textContent = formatCurrency(totalFixedCosts);
+            modalAverageMarginEl.textContent = formatPercentage(averageMargin);
+            modalBeUnitsEl.textContent = isFinite(beUnits) ? Math.ceil(Math.max(0, beUnits)) : 0;
+            modalBeValueEl.textContent = isFinite(beValue) ? formatCurrency(beValue) : formatCurrency(0);
+            modalProfitEl.textContent = formatCurrency(profit);
+            modalProfitEl.className = `text-2xl font-bold mt-1 ${profit >= 0 ? 'text-green-700' : 'text-red-600'}`;
+            modalRoiEl.textContent = formatPercentage(roi);
+            modalRoiEl.className = `text-2xl font-bold mt-1 ${roi >= 0 ? 'text-green-700' : 'text-red-600'}`;
+        }
+        
+        // Función para generar el PDF de forma programática
+        function generateModalPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            let yOffset = 20; // Posición vertical inicial para el texto
+
+            // Título
+            doc.setFontSize(22);
+            doc.text("Resumen Financiero Detallado", 105, yOffset, null, null, "center");
+            yOffset += 15;
+
+            // Sección de Resumen General
+            doc.setFontSize(16);
+            doc.text("Resumen General", 15, yOffset);
+            yOffset += 10;
+            doc.setFontSize(12);
+
+            // Obtener valores de la modal para asegurar que estén actualizados
+            const productCount = document.getElementById('modal-product-count').textContent;
+            const totalInvestment = document.getElementById('modal-total-investment').textContent;
+            const totalFixedCosts = document.getElementById('modal-total-fixed-costs').textContent;
+            const averageMargin = document.getElementById('modal-average-margin').textContent;
+            const beUnits = document.getElementById('modal-be-units').textContent;
+            const beValue = document.getElementById('modal-be-value').textContent;
+            const profit = document.getElementById('modal-profit').textContent;
+            const roi = document.getElementById('modal-roi').textContent;
+
+            // Agregar datos al PDF
+            doc.text(`Total de Productos Definidos: ${productCount}`, 15, yOffset);
+            yOffset += 7;
+            doc.text(`Inversión Inicial Total: ${totalInvestment}`, 15, yOffset);
+            yOffset += 7;
+            doc.text(`Total Gastos Fijos Mensuales: ${totalFixedCosts}`, 15, yOffset);
+            yOffset += 7;
+            doc.text(`Margen Promedio de Productos: ${averageMargin}`, 15, yOffset);
+            yOffset += 15;
+
+            // Sección Punto de Equilibrio
+            doc.setFontSize(16);
+            doc.text("Punto de Equilibrio", 15, yOffset);
+            yOffset += 10;
+            doc.setFontSize(12);
+            doc.text(`En Unidades: ${beUnits}`, 15, yOffset);
+            yOffset += 7;
+            doc.text(`En Ingresos: ${beValue}`, 15, yOffset);
+            yOffset += 15;
+            
+            // Sección Proyección de Rentabilidad
+            doc.setFontSize(16);
+            doc.text("Proyección de Rentabilidad", 15, yOffset);
+            yOffset += 10;
+            doc.setFontSize(12);
+            doc.text(`Utilidad Neta Estimada: ${profit}`, 15, yOffset);
+            yOffset += 7;
+            doc.text(`Retorno de Inversión (ROI): ${roi}`, 15, yOffset);
+            yOffset += 15;
+
+            // Guardar el PDF
+            doc.save('resumen_financiero.pdf');
+        }
+
+        // --- Event Listeners ---
+        addFixedCostBtn.addEventListener('click', () => addRow(fixedCostsTable, [
+            { type: 'text', placeholder: 'Ej. Alquiler Local' },
+            { type: 'number', placeholder: 'Ej. 500.00' }
+        ]));
+        
+        addToolBtn.addEventListener('click', () => addRow(toolsTable, [
+            { type: 'text', placeholder: 'Ej. Impresora 3D' },
+            { type: 'number', placeholder: 'Ej. 800.00' },
+            { type: 'number', placeholder: 'Ej. 100.00' },
+            { type: 'number', placeholder: 'Ej. 48' }
+        ]));
+        
+        addProductBtn.addEventListener('click', addProductCard);
+        
+        businessNameInput.addEventListener('input', calculateAll);
+        investmentInput.addEventListener('input', calculateAll);
+        salesUnitsInput.addEventListener('input', calculateAll);
+
+        instructionsHeader.addEventListener('click', () => {
+            instructionsContent.classList.toggle('active');
+            instructionsIcon.textContent = instructionsContent.classList.contains('active') ? '▲' : '▼';
         });
-    </script>
+
+        openSummaryModalBtn.addEventListener('click', () => {
+            summaryModal.classList.remove('hidden');
+            document.body.classList.add('modal-open');
+        });
+        closeModalBtn.addEventListener('click', () => {
+            summaryModal.classList.add('hidden');
+            document.body.classList.remove('modal-open');
+        });
+        summaryModal.addEventListener('click', (e) => {
+            if (e.target === summaryModal) {
+                summaryModal.classList.add('hidden');
+                document.body.classList.remove('modal-open');
+            }
+        });
+        
+        generatePdfBtn.addEventListener('click', generateModalPDF);
+
+
+        // --- Inicialización ---
+        addRow(fixedCostsTable, [{ type: 'text', placeholder: 'Ej. Alquiler Local', value: 'Alquiler Local' }, { type: 'number', placeholder: 'Ej. 500.00', value: '500' }]);
+        addRow(toolsTable, [{ type: 'text', placeholder: 'Ej. Impresora 3D', value: 'Impresora' }, { type: 'number', placeholder: 'Ej. 800.00', value: '800' }, { type: 'number', placeholder: 'Ej. 100.00', value: '100' }, { type: 'number', placeholder: 'Ej. 48', value: '48' }]);
+        addProductCard();
+        calculateAll();
+    });
+</script>
+    <div id="summary-modal" class="fixed inset-0 bg-slate-900 bg-opacity-75 flex items-center justify-center p-4 z-50 hidden">
+    <div class="modal-content bg-white rounded-2xl shadow-xl p-6 md:p-8 relative">
+        <button id="close-modal-btn" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+        <h2 class="text-3xl font-bold text-slate-900 mb-6 text-center">Resumen Financiero Detallado</h2>
+
+        <div class="space-y-6">
+            <div class="flex flex-col md:flex-row md:justify-between md:items-center p-4 bg-teal-50 rounded-xl border border-teal-200">
+                <span class="text-lg font-semibold text-slate-700">Total de Productos Definidos:</span>
+                <span id="modal-product-count" class="text-2xl font-bold text-teal-700">0</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                    <span class="text-sm font-semibold text-slate-500">Inversión Inicial Total:</span>
+                    <p id="modal-total-investment" class="text-xl font-bold text-slate-800 mt-1">0,00 Bs.S</p>
+                </div>
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                    <span class="text-sm font-semibold text-slate-500">Total Gastos Fijos Mensuales:</span>
+                    <p id="modal-total-fixed-costs" class="text-xl font-bold text-slate-800 mt-1">0,00 Bs.S</p>
+                </div>
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                    <span class="text-sm font-semibold text-slate-500">Margen Promedio de Productos:</span>
+                    <p id="modal-average-margin" class="text-xl font-bold text-slate-800 mt-1">0.00 %</p>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 p-6 rounded-xl border border-blue-200">
+                <h3 class="text-xl font-bold text-blue-800 mb-2">Punto de Equilibrio</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <span class="text-sm font-semibold text-slate-500">En Unidades:</span>
+                        <p id="modal-be-units" class="text-2xl font-bold text-blue-700 mt-1">0</p>
+                    </div>
+                    <div>
+                        <span class="text-sm font-semibold text-slate-500">En Ingresos:</span>
+                        <p id="modal-be-value" class="text-2xl font-bold text-blue-700 mt-1">0,00 Bs.S</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-green-50 p-6 rounded-xl border border-green-200">
+                <h3 class="text-xl font-bold text-green-800 mb-2">Proyección de Rentabilidad</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <span class="text-sm font-semibold text-slate-500">Utilidad Neta Estimada (con ${document.getElementById('sales-units-input')?.value || 0} unid.):</span>
+                        <p id="modal-profit" class="text-2xl font-bold text-green-700 mt-1">0,00 Bs.S</p>
+                    </div>
+                    <div>
+                        <span class="text-sm font-semibold text-slate-500">Retorno de Inversión (ROI):</span>
+                        <p id="modal-roi" class="text-2xl font-bold text-green-700 mt-1">0.00 %</p>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center">
+            <button id="generate-pdf-btn" class="btn btn-secondary">Generar PDF</button>
+        </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 </body>
 </html>
